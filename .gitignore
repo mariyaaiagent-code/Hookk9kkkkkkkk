@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+bot_data.db
+.env
+public/
+firebase_service_account.json

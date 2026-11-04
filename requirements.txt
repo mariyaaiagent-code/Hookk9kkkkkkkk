@@ -1,0 +1,8 @@
+fastapi>=0.110.0
+uvicorn>=0.28.0
+python-telegram-bot[job-queue]>=21.0
+apscheduler>=3.10.4
+requests>=2.31.0
+openpyxl>=3.1.2
+playwright>=1.40.0
+firebase-admin>=6.4.0
