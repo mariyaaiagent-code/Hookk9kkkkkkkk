@@ -42,10 +42,9 @@ from telegram.ext import (
 )
 
 # ─── CONFIG ───────────────────────────────────────────────────────────────────
-SUPER_ADMINS = {7831629041, 8407207846, 7831629041}  # permanent; cannot be removed
-# The token must come from the runtime secret store. Never keep a fallback
-# token in source control: a leaked bot token gives full control of the bot.
-BOT_TOKEN = os.getenv("BOT_TOKEN", "8962312570:AAFk8SZ1_Ch3RVQnfK2a4AAn8LCKcriy3qY")
+SUPER_ADMINS = {7831629041, 8407207846}  # permanent; cannot be removed
+# The bot token is loaded strictly from environment variables.
+BOT_TOKEN  = os.getenv("BOT_TOKEN", "")
 DB_FILE    = os.getenv("BOT_DB_FILE", "bot_data.db")
 JSON_DB_DIR = os.getenv(
     "BOT_JSON_DB_DIR",
