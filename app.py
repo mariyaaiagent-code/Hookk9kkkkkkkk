@@ -3,9 +3,40 @@ import socketserver
 import os
 import sqlite3
 import json
+import subprocess
+import sys
+import threading
+import time
 
 PORT = int(os.getenv("PORT", 3000))
 DB_FILE = os.getenv("BOT_DB_FILE", "bot_data.db")
+BOT_TOKEN = os.getenv("BOT_TOKEN", "").strip()
+
+bot_process = None
+
+def run_bot_process():
+    global bot_process
+    if not BOT_TOKEN:
+        print("=" * 70)
+        print("[APP.PY WARNING] BOT_TOKEN environment variable is NOT set!")
+        print("[APP.PY WARNING] Please set BOT_TOKEN in your Render / Server Environment settings.")
+        print("[APP.PY WARNING] Telegram bot (James.py) cannot start without BOT_TOKEN.")
+        print("=" * 70)
+        return
+
+    print("=" * 70)
+    print(f"[APP.PY INFO] Launching Telegram Bot process (James.py)...")
+    print("=" * 70)
+    while True:
+        try:
+            bot_process = subprocess.Popen([sys.executable, "James.py"])
+            print(f"[APP.PY INFO] Telegram Bot process active with PID {bot_process.pid}")
+            ret = bot_process.wait()
+            print(f"[APP.PY WARNING] Telegram Bot process exited with code {ret}. Restarting in 5s...")
+            time.sleep(5)
+        except Exception as e:
+            print(f"[APP.PY ERROR] Failed to start James.py: {e}")
+            time.sleep(5)
 
 class Handler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
@@ -66,6 +97,20 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         except Exception as e:
             print(f"Dashboard DB error: {e}")
 
+        bot_status_badge = '<span class="text-xs bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2.5 py-1 rounded-full">● Bot Active</span>' if BOT_TOKEN else '<span class="text-xs bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2.5 py-1 rounded-full">⚠️ BOT_TOKEN Missing</span>'
+        
+        token_alert_html = ""
+        if not BOT_TOKEN:
+            token_alert_html = """
+            <div class="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 flex items-center gap-4 text-amber-300">
+                <i class="fa-solid fa-triangle-exclamation text-2xl text-amber-400 flex-shrink-0"></i>
+                <div class="text-sm">
+                    <strong class="font-bold text-white block mb-0.5">BOT_TOKEN Environment Variable is Not Set on Render!</strong>
+                    To start the bot, go to your Render Dashboard &rarr; <b>Environment</b> &rarr; Add Environment Variable: <code>BOT_TOKEN = your_bot_token</code>. The web server auto-launches the bot process once configured.
+                </div>
+            </div>
+            """
+
         html = f"""<!DOCTYPE html>
 <html lang="en" class="dark">
 <head>
@@ -118,7 +163,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 <div>
                     <h2 class="text-2xl font-bold text-white flex items-center gap-2">
                         <span>𝗢𝗧𝗣 𝗭𝗢𝗡𝗘 Control Center</span>
-                        <span class="text-xs bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2.5 py-1 rounded-full">● Live</span>
+                        {bot_status_badge}
                     </h2>
                     <p class="text-sm text-slate-400">Automated number provisioning & OTP forwarding system</p>
                 </div>
@@ -131,6 +176,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
             <!-- Content Body -->
             <div class="p-8 space-y-8">
+                {token_alert_html}
                 <!-- Stats Grid -->
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
                     <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
@@ -306,6 +352,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         return
 
 if __name__ == "__main__":
+    bot_thread = threading.Thread(target=run_bot_process, daemon=True)
+    bot_thread.start()
+
     socketserver.TCPServer.allow_reuse_address = True
     with socketserver.TCPServer(("0.0.0.0", PORT), Handler) as httpd:
         print(f"Serving 𝗢𝗧𝗣 𝗭𝗢𝗡𝗘 Dashboard on port {PORT}")
